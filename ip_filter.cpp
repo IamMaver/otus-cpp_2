@@ -88,7 +88,7 @@ std::vector<std::vector<std::string>> filter_any_46(std::vector<std::vector<std:
     return rv;
 }
 
-int main(int argc, char const *argv[])
+int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[])
 {
     try
     {
