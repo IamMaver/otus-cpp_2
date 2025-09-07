@@ -3,26 +3,25 @@ cmake_minimum_required(VERSION 3.12)
 set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
 set(PROJECT_VERSION 0.0.${PATCH_VERSION})
 
-project(helloworld VERSION ${PROJECT_VERSION})
+project(ipfilter VERSION ${PROJECT_VERSION})
 
 option(WITH_BOOST_TEST "Whether to build Boost test" ON)
 
 configure_file(version.h.in version.h)
 
-add_executable(helloworld_cli main.cpp)
-add_library(helloworld lib.cpp)
+add_executable(ipfilter_cli ip_filter.cpp)
 
-set_target_properties(helloworld_cli helloworld PROPERTIES
-    CXX_STANDARD 14
+set_target_properties(ipfilter_cli ipfilter PROPERTIES
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 )
 
-target_include_directories(helloworld
+target_include_directories(ipfilter
     PRIVATE "${CMAKE_BINARY_DIR}"
 )
 
-target_link_libraries(helloworld_cli PRIVATE
-    helloworld
+target_link_libraries(ipfilter_cli PRIVATE
+    ipfilter
 )
 
 if(WITH_BOOST_TEST)
@@ -41,15 +40,15 @@ if(WITH_BOOST_TEST)
 
     target_link_libraries(test_version
         ${Boost_LIBRARIES}
-        helloworld
+        ipfilter
     )
 endif()
 
 if (MSVC)
-    target_compile_options(helloworld_cli PRIVATE
+    target_compile_options(ipfilter_cli PRIVATE
         /W4
     )
-    target_compile_options(helloworld PRIVATE
+    target_compile_options(ipfilter PRIVATE
         /W4
     )
     if(WITH_BOOST_TEST)
@@ -58,10 +57,10 @@ if (MSVC)
         )
     endif()
 else ()
-    target_compile_options(helloworld_cli PRIVATE
+    target_compile_options(ipfilter_cli PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
-    target_compile_options(helloworld PRIVATE
+    target_compile_options(ipfilter PRIVATE
         -Wall -Wextra -pedantic -Werror
     )
     if(WITH_BOOST_TEST)
@@ -71,14 +70,14 @@ else ()
     endif()
 endif()
 
-install(TARGETS helloworld_cli RUNTIME DESTINATION bin)
+install(TARGETS ipfilter_cli RUNTIME DESTINATION bin)
 
 set(CPACK_GENERATOR DEB)
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 set(CPACK_PACKAGE_CONTACT example@example.com)
-set(CPACK_PACKAGE_FILE_NAME "helloworld-0.0.${PROJECT_VERSION_PATCH}-Linux")
+set(CPACK_PACKAGE_FILE_NAME "ipfilter-0.0.${PROJECT_VERSION_PATCH}-Linux")
 include(CPack)
 
 if(WITH_BOOST_TEST)
