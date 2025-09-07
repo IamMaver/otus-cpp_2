@@ -1,86 +1,56 @@
 cmake_minimum_required(VERSION 3.12)
 
-set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
-set(PROJECT_VERSION 0.0.${PATCH_VERSION})
+project(ipfilter LANGUAGES CXX)
 
-project(ipfilter VERSION ${PROJECT_VERSION})
+option(WITH_BOOST_TEST "Build Boost test" OFF)
 
-option(WITH_BOOST_TEST "Whether to build Boost test" ON)
+# --- основной бинарник ---
+add_executable(ipfilter_cli
+    ip_filter.cpp
+)
 
-configure_file(version.h.in version.h)
-
-add_executable(ipfilter_cli ip_filter.cpp)
-
-set_target_properties(ipfilter_cli ipfilter PROPERTIES
+set_target_properties(ipfilter_cli PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
 )
 
-target_include_directories(ipfilter
-    PRIVATE "${CMAKE_BINARY_DIR}"
-)
+if (MSVC)
+    target_compile_options(ipfilter_cli PRIVATE /W4)
+else()
+    target_compile_options(ipfilter_cli PRIVATE -Wall -Wextra -pedantic -Werror)
+endif()
 
-target_link_libraries(ipfilter_cli PRIVATE
-    ipfilter
-)
+# --- опциональные тесты ---
+if (WITH_BOOST_TEST)
+    # подавим предупреждение про CMP0167 на новых cmake
+    if (POLICY CMP0167)
+        cmake_policy(SET CMP0167 NEW)
+    endif()
 
-if(WITH_BOOST_TEST)
-    find_package(Boost COMPONENTS unit_test_framework REQUIRED)
-    add_executable(test_version test_version.cpp)
+    find_package(Boost 1.70 REQUIRED COMPONENTS unit_test_framework)
 
+    add_executable(test_version
+        test_version.cpp
+    )
     set_target_properties(test_version PROPERTIES
-        CXX_STANDARD 14
+        CXX_STANDARD 20
         CXX_STANDARD_REQUIRED ON
     )
+    target_link_libraries(test_version PRIVATE Boost::unit_test_framework)
+    target_compile_definitions(test_version PRIVATE BOOST_TEST_DYN_LINK)
 
-    set_target_properties(test_version PROPERTIES
-        COMPILE_DEFINITIONS BOOST_TEST_DYN_LINK
-        INCLUDE_DIRECTORIES ${Boost_INCLUDE_DIR}
-    )
-
-    target_link_libraries(test_version
-        ${Boost_LIBRARIES}
-        ipfilter
-    )
+    enable_testing()
+    add_test(NAME test_version COMMAND test_version)
 endif()
 
-if (MSVC)
-    target_compile_options(ipfilter_cli PRIVATE
-        /W4
-    )
-    target_compile_options(ipfilter PRIVATE
-        /W4
-    )
-    if(WITH_BOOST_TEST)
-        target_compile_options(test_version PRIVATE
-            /W4
-        )
-    endif()
-else ()
-    target_compile_options(ipfilter_cli PRIVATE
-        -Wall -Wextra -pedantic -Werror
-    )
-    target_compile_options(ipfilter PRIVATE
-        -Wall -Wextra -pedantic -Werror
-    )
-    if(WITH_BOOST_TEST)
-        target_compile_options(test_version PRIVATE
-            -Wall -Wextra -pedantic -Werror
-        )
-    endif()
-endif()
-
+# --- установка (опционально) ---
 install(TARGETS ipfilter_cli RUNTIME DESTINATION bin)
 
+# --- упаковка (можно вообще убрать, если не нужно) ---
 set(CPACK_GENERATOR DEB)
-set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+set(CPACK_PACKAGE_VERSION_MAJOR "1")
+set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_CONTACT example@example.com)
-set(CPACK_PACKAGE_FILE_NAME "ipfilter-0.0.${PROJECT_VERSION_PATCH}-Linux")
+set(CPACK_PACKAGE_FILE_NAME "ipfilter-1.0.0-Linux")
 include(CPack)
-
-if(WITH_BOOST_TEST)
-    enable_testing()
-    add_test(test_version test_version)
-endif()
