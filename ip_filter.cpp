@@ -39,7 +39,7 @@ ip4address parse_ip(std::string s, const char delimiter)
     ip4address ip{};
     for (size_t i = 0; i < 4; ++i)
     {
-        const std::string& t = parts[i];
+        const std::string &t = parts[i];
         if (t.empty())
             throw std::runtime_error("Empty IP octet");
 
@@ -75,17 +75,9 @@ std::vector<ip4address> fill_vector_ip_pool()
 
 void print_ip_pool(std::vector<ip4address> const &ip_pool)
 {
-    for (auto ip_address = ip_pool.cbegin(); ip_address != ip_pool.cend(); ip_address++)
+    for (const auto &ip : ip_pool)
     {
-        for (size_t i = 0; i < 4; i++)
-        {
-            if (i != 0)
-            {
-                std::cout << ".";
-            }
-            std::cout << (*ip_address)[i];
-        }
-        std::cout << std::endl;
+        std::cout << ip[0] << '.' << ip[1] << '.' << ip[2] << '.' << ip[3] << '\n';
     }
 }
 
