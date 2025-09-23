@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <array>
+#include <cctype>
 
 using ip4address = std::array<int, 4>;
 
@@ -28,26 +29,34 @@ std::vector<std::string> split(const std::string &str, char d)
 
 ip4address parse_ip(std::string s, const char delimiter)
 {
-    size_t pos = s.find(delimiter);
-    if (pos != std::string::npos)
-    {
-        s = s.substr(0, pos);
-    }
+    if (auto pos = s.find(delimiter); pos != std::string::npos)
+        s.erase(pos);
 
     auto parts = split(s, '.');
     if (parts.size() != 4)
-    {
         throw std::runtime_error("Invalid IP format: " + s);
-    }
 
     ip4address ip{};
     for (size_t i = 0; i < 4; ++i)
     {
-        int num = std::stoi(parts[i]);
-        if (num < 0 || num > 255)
-        {
-            throw std::out_of_range("Invalid IP octet: " + parts[i]);
-        }
+        const std::string& t = parts[i];
+        if (t.empty())
+            throw std::runtime_error("Empty IP octet");
+
+        for (char c : t)
+            if (!std::isdigit(static_cast<unsigned char>(c)))
+                throw std::runtime_error("Invalid IP octet: " + t);
+
+        if (t.size() > 3)
+            throw std::out_of_range("Invalid IP octet: " + t);
+
+        int num = 0;
+        for (char c : t)
+            num = num * 10 + (c - '0');
+
+        if (num > 255)
+            throw std::out_of_range("Invalid IP octet: " + t);
+
         ip[i] = num;
     }
     return ip;
@@ -84,7 +93,6 @@ std::vector<std::array<int, 4>>
 filter(const std::vector<std::array<int, 4>> &in, std::initializer_list<int> prefix)
 {
     std::vector<std::array<int, 4>> out;
-    out.reserve(in.size());
     for (const auto &ip : in)
     {
         bool ok = true;
@@ -101,7 +109,6 @@ filter(const std::vector<std::array<int, 4>> &in, std::initializer_list<int> pre
         if (ok)
             out.push_back(ip);
     }
-    out.shrink_to_fit();
     return out;
 }
 
@@ -109,7 +116,6 @@ std::vector<std::array<int, 4>>
 filter_any(const std::vector<std::array<int, 4>> &in, int value)
 {
     std::vector<std::array<int, 4>> out;
-    out.reserve(in.size());
     for (const auto &ip : in)
     {
         if (ip[0] == value || ip[1] == value || ip[2] == value || ip[3] == value)
@@ -117,7 +123,6 @@ filter_any(const std::vector<std::array<int, 4>> &in, int value)
             out.push_back(ip);
         }
     }
-    out.shrink_to_fit();
     return out;
 }
 
