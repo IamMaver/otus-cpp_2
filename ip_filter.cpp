@@ -4,15 +4,16 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstdint>
 
-using ip4address = std::array<int, 4>;
+using ip4address = std::array<uint8_t, 4>;
 
 std::vector<std::string> split(const std::string &str, char d)
 {
     std::vector<std::string> r;
 
     std::string::size_type start = 0;
-    std::string::size_type stop = str.find_first_of(d);
+    std::string::size_type stop = str.find(d);
 
     while (stop != std::string::npos)
     {
@@ -27,12 +28,13 @@ std::vector<std::string> split(const std::string &str, char d)
     return r;
 }
 
-ip4address parse_ip(std::string s, const char delimiter)
+ip4address parse_ip(std::string &s, const char delimiter)
 {
     if (auto pos = s.find(delimiter); pos != std::string::npos)
         s.erase(pos);
 
     auto parts = split(s, '.');
+
     if (parts.size() != 4)
         throw std::runtime_error("Invalid IP format: " + s);
 
@@ -73,64 +75,39 @@ std::vector<ip4address> fill_vector_ip_pool()
     return ip_pool;
 }
 
-void print_ip_pool(std::vector<ip4address> const &ip_pool)
+inline void print_ip(ip4address const ip)
 {
-    for (const auto &ip : ip_pool)
-    {
-        std::cout << ip[0] << '.' << ip[1] << '.' << ip[2] << '.' << ip[3] << '\n';
-    }
+    std::cout << static_cast<uint32_t>(ip[0]) << '.' << static_cast<uint32_t>(ip[1]) << '.' << static_cast<uint32_t>(ip[2]) << '.' << static_cast<uint>(ip[3]) << '\n';
 }
 
-std::vector<std::array<int, 4>>
-filter(const std::vector<std::array<int, 4>> &in, std::initializer_list<int> prefix)
+template <class Pred>
+void print_ip_pool(const std::vector<ip4address> &in, Pred pred)
 {
-    std::vector<std::array<int, 4>> out;
     for (const auto &ip : in)
-    {
-        bool ok = true;
-        size_t i = 0;
-        for (int want : prefix)
+        if (pred(ip))
         {
-            if (i >= 4 || ip[i] != want)
-            {
-                ok = false;
-                break;
-            }
-            ++i;
+            print_ip(ip);
         }
-        if (ok)
-            out.push_back(ip);
-    }
-    return out;
-}
-
-std::vector<std::array<int, 4>>
-filter_any(const std::vector<std::array<int, 4>> &in, int value)
-{
-    std::vector<std::array<int, 4>> out;
-    for (const auto &ip : in)
-    {
-        if (ip[0] == value || ip[1] == value || ip[2] == value || ip[3] == value)
-        {
-            out.push_back(ip);
-        }
-    }
-    return out;
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char const *argv[])
 {
     try
     {
-        std::vector<ip4address> ip_pool;
+        auto ip_pool = fill_vector_ip_pool();
 
-        ip_pool = fill_vector_ip_pool();
         std::sort(ip_pool.begin(), ip_pool.end(),
                   std::greater<>());
-        print_ip_pool(ip_pool);
-        print_ip_pool(filter(ip_pool, {1}));
-        print_ip_pool(filter(ip_pool, {46, 70}));
-        print_ip_pool(filter_any(ip_pool, 46));
+
+        print_ip_pool(ip_pool, [](const ip4address ip)
+                      { return true; });
+        print_ip_pool(ip_pool, [](const ip4address ip)
+                      { return ip[0] == 1; });
+        print_ip_pool(ip_pool, [](const ip4address ip)
+                      { return ip[0] == 46 && ip[1] == 70; });
+        uint8_t value = 46;
+        print_ip_pool(ip_pool, [value](const ip4address ip)
+                      { return ip[0] == value || ip[1] == value || ip[2] == value || ip[3] == value; });
     }
     catch (const std::exception &e)
     {
